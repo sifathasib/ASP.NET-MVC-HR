@@ -1,10 +1,7 @@
-using test.Repositories;
+using System;
+using System.Data;
+using Oracle.ManagedDataAccess.Client;
 using test.Models;
-using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
-using test.Models;
-using System.Threading.Tasks;
-using System.Linq;
 using Microsoft.EntityFrameworkCore;
 
 namespace test.Repositories;
@@ -28,7 +25,68 @@ public class EmployeeRepository : IEmployeeRepository
 
     public async Task<Employee> GetEmployeeByIdAsync(int id)
     {
-        return await _context.EMPLOYEES.FindAsync(id);
+        Employee employee = null;
+
+        // Get the database connection from AppDbContext
+        var connection = _context.Database.GetDbConnection();
+
+        try
+        {
+            // Open the connection if it's not already open
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+            }
+
+            // Create an OracleCommand to call the stored procedure
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = "EMPLOYEE_PACKAGE.GET_EMPLOYEE_BY_ID";
+                command.CommandType = CommandType.StoredProcedure;
+
+                // Add input parameter for employee ID
+                var employeeIdParam = new OracleParameter("p_employee_id", OracleDbType.Int32)
+                {
+                    Value = id
+                };
+                command.Parameters.Add(employeeIdParam);
+
+                // Add output parameter for the SYS_REFCURSOR
+                var cursorParam = new OracleParameter("p_employee", OracleDbType.RefCursor)
+                {
+                    Direction = ParameterDirection.Output
+                };
+                command.Parameters.Add(cursorParam);
+
+                // Execute the command and retrieve the result
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    if (reader.HasRows)
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            employee = new Employee
+                            {
+                                EMPLOYEE_ID = reader.GetInt32(0),
+                                FIRST_NAME = reader.GetString(1),
+                                LAST_NAME = reader.GetString(2),
+                                EMAIL = reader.GetString(3)
+                            };
+                        }
+                    }
+                }
+            }
+        }
+        finally
+        {
+            // Ensure the connection is closed
+            if (connection.State == ConnectionState.Open)
+            {
+                await connection.CloseAsync();
+            }
+        }
+
+        return employee;
     }
 
     public async Task AddEmployeeAsync(Employee employee)

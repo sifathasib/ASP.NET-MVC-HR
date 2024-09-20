@@ -1,0 +1,26 @@
+@model test.Models.Employee
+
+<h2>Edit Employee</h2>
+
+<form asp-action="Edit" method="post">
+    <div class="form-group">
+        <label asp-for="FIRST_NAME"></label>
+        <input asp-for="FIRST_NAME" class="form-control" />
+        <span asp-validation-for="FIRST_NAME" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="LAST_NAME"></label>
+        <input asp-for="LAST_NAME" class="form-control" />
+        <span asp-validation-for="LAST_NAME" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="EMAIL"></label>
+        <input asp-for="EMAIL" class="form-control" />
+        <span asp-validation-for="EMAIL" class="text-danger"></span>
+    </div>
+
+    <input type="hidden" asp-for="EMPLOYEE_ID" />
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>
